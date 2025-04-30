@@ -12,13 +12,13 @@ USER root
 RUN echo '#!/bin/sh\n\
 if [ -n "$DATABASE_URL" ]; then\n\
   # Parse the DATABASE_URL\n\
-  pattern="^postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)$"\n\
+  pattern="postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)"\n\
   if echo "$DATABASE_URL" | grep -E "$pattern" > /dev/null; then\n\
-    export KONG_PG_USER=$(echo "$DATABASE_URL" | sed -E "s/$pattern/\\1/")\n\
-    export KONG_PG_PASSWORD=$(echo "$DATABASE_URL" | sed -E "s/$pattern/\\2/")\n\
-    export KONG_PG_HOST=$(echo "$DATABASE_URL" | sed -E "s/$pattern/\\3/")\n\
-    export KONG_PG_PORT=$(echo "$DATABASE_URL" | sed -E "s/$pattern/\\4/")\n\
-    export KONG_PG_DATABASE=$(echo "$DATABASE_URL" | sed -E "s/$pattern/\\5/")\n\
+    export KONG_PG_USER=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\1|")\n\
+    export KONG_PG_PASSWORD=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\2|")\n\
+    export KONG_PG_HOST=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\3|")\n\
+    export KONG_PG_PORT=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\4|")\n\
+    export KONG_PG_DATABASE=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\5|")\n\
     echo "Kong Postgres settings configured from DATABASE_URL"\n\
   else\n\
     echo "Error: DATABASE_URL format not recognized"\n\
