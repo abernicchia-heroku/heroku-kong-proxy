@@ -139,4 +139,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-For issues and questions, please open an issue in the GitHub repository. 
+For issues and questions, please open an issue in the GitHub repository.
