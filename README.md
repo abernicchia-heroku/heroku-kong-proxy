@@ -1,112 +1,115 @@
 # Kong API Gateway on Heroku
 
-This repository contains a Kong API Gateway configured to run on Heroku. Kong is a popular, open-source API Gateway that helps you manage, secure, and monitor your APIs.
+This repository contains a Dockerized Kong API Gateway configured to run on Heroku. Kong is a popular, open-source API Gateway that helps you manage, secure, and monitor your APIs.
 
 ## Prerequisites
 
-- [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
-- [Git](https://git-scm.com/downloads)
-- Heroku account with access to:
-  - Container Registry
-  - Postgres database addon
+- Heroku CLI installed
+- Docker installed (for local development)
+- A Heroku account
+- PostgreSQL add-on attached to your Heroku app
 
-## Quick Deploy
+## Deployment Steps
 
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
-
-## Manual Deployment Steps
-
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/abernicchia-heroku/heroku-kong-proxy.git
-   cd heroku-kong-proxy
-   ```
-
-2. Create a new Heroku app:
+1. Create a new Heroku app:
    ```bash
    heroku create your-app-name
    ```
 
-3. Add PostgreSQL addon:
+2. Add PostgreSQL add-on:
    ```bash
    heroku addons:create heroku-postgresql:mini
    ```
 
-4. Set the stack to container:
-   ```bash
-   heroku stack:set container
-   ```
-
-5. Deploy the application:
+3. Deploy the application:
    ```bash
    git push heroku main
    ```
 
-The deployment process is managed by `heroku.yml`, which defines how to build and run the container. Heroku will automatically:
-- Build the Docker image using the Dockerfile
-- Set the required environment variables
-- Deploy the container
-- Connect it to the PostgreSQL database
+## Database Setup
 
-## Configuration
+Before Kong can start serving requests, you need to initialize its database schema. This is a one-time operation that should be performed after the first deployment or when upgrading Kong to a new version.
 
-The Kong API Gateway is configured using the following files:
+To run the database migrations, you'll need to execute them in a one-off dyno with the proper database configuration. Here's how:
 
-- `kong.conf`: Main Kong configuration file
-- `kong.yml`: Declarative configuration file for services and routes
-- `Dockerfile`: Container configuration with PostgreSQL support
-- `heroku.yml`: Heroku container build and runtime configuration
+1. First, get your database URL:
+   ```bash
+   heroku config:get DATABASE_URL -a your-app-name
+   ```
 
-### Environment Variables
+2. Run a one-off dyno with the necessary Kong environment variables:
+   ```bash
+   heroku run -a your-app-name \
+     -e KONG_DATABASE=postgres \
+     -e KONG_PG_SSL=on \
+     -e KONG_PG_SSL_VERIFY=off \
+     bash
+   ```
 
-The following environment variables are automatically configured:
+3. Once inside the dyno's shell, parse the database URL and set up Kong environment variables:
+   ```bash
+   # Get DATABASE_URL from the environment
+   DATABASE_URL=$(echo $DATABASE_URL)
+   
+   # Parse DATABASE_URL components
+   userpass=$(echo "$DATABASE_URL" | sed -e "s|postgres://\([^@]*\)@.*|\1|")
+   hostport=$(echo "$DATABASE_URL" | sed -e "s|postgres://[^@]*@\([^/]*\)/.*|\1|")
+   dbname=$(echo "$DATABASE_URL" | sed -e "s|postgres://[^@]*@[^/]*/\(.*\)|\1|")
+   
+   # Set Kong environment variables
+   export KONG_PG_USER=$(echo "$userpass" | cut -d: -f1)
+   export KONG_PG_PASSWORD=$(echo "$userpass" | cut -d: -f2)
+   export KONG_PG_HOST=$(echo "$hostport" | cut -d: -f1)
+   export KONG_PG_PORT=$(echo "$hostport" | cut -d: -f2)
+   export KONG_PG_DATABASE="$dbname"
+   ```
 
-- `DATABASE_URL`: Set automatically by Heroku PostgreSQL addon
-- `PORT`: Set automatically by Heroku
+4. Finally, run the migrations:
+   ```bash
+   kong migrations bootstrap --force
+   ```
 
-Additional Kong-specific variables set in heroku.yml:
-- `KONG_DATABASE`: postgres
-- `KONG_PG_SSL`: on
-- `KONG_PG_SSL_VERIFY`: off
-- `KONG_PROXY_ACCESS_LOG`: /dev/stdout
-- `KONG_ADMIN_ACCESS_LOG`: /dev/stdout
-- `KONG_PROXY_ERROR_LOG`: /dev/stderr
-- `KONG_ADMIN_ERROR_LOG`: /dev/stderr
-- `KONG_ADMIN_LISTEN`: off (for security in Heroku environment)
+This command will:
+- Create the necessary database tables
+- Initialize the schema
+- Prepare the database for Kong operations
 
-## Monitoring and Logs
+The `--force` flag ensures the operation completes even if the database was partially initialized.
 
-View your app's logs:
+## Verification
+
+After running the migrations, you can verify that Kong is running properly by checking the logs:
+
 ```bash
 heroku logs --tail
 ```
 
-## Scaling
+You should see messages indicating that Kong has started successfully and is listening for requests.
 
-Scale your Kong instance:
-```bash
-heroku ps:scale web=2
-```
+## Configuration
 
-## Security Considerations
+The Kong gateway is configured using the following files:
+- `kong.conf`: Main configuration file
+- `kong.yml`: Declarative configuration for routes and services
+- `Dockerfile`: Container configuration and bootstrap script
 
-- Admin API is disabled by default for security
-- SSL is enabled for PostgreSQL connections
-- SSL verification is disabled to work with Heroku's PostgreSQL certificates
+Environment variables are automatically configured by the bootstrap script using the `DATABASE_URL` provided by Heroku.
 
 ## Troubleshooting
 
-1. If the app fails to start, check the logs:
+If you encounter any issues:
+
+1. Check the logs:
    ```bash
    heroku logs --tail
    ```
 
-2. Verify PostgreSQL connection:
+2. Verify the database connection:
    ```bash
-   heroku pg:info
+   heroku config | grep DATABASE_URL
    ```
 
-3. Restart the application:
+3. If needed, you can restart the application:
    ```bash
    heroku restart
    ```

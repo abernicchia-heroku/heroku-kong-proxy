@@ -39,33 +39,34 @@ parse_database_url() {\n\
     echo "KONG_PG_DATABASE=$KONG_PG_DATABASE"\n\
 }\n\
 \n\
-if [ "$1" = "kong" ]; then\n\
-    if [ -n "$DATABASE_URL" ]; then\n\
-        echo "DATABASE_URL is set, attempting to parse..."\n\
-        parse_database_url\n\
-        \n\
-        # Verify all required variables are set\n\
-        if [ -z "$KONG_PG_USER" ] || [ -z "$KONG_PG_PASSWORD" ] || \n\
-           [ -z "$KONG_PG_HOST" ] || [ -z "$KONG_PG_PORT" ] || \n\
-           [ -z "$KONG_PG_DATABASE" ]; then\n\
-            echo "Error: Failed to parse one or more database connection parameters"\n\
-            echo "Please ensure DATABASE_URL is in the format: postgres://user:password@host:port/dbname"\n\
-            exit 1\n\
-        fi\n\
-        \n\
-        # Ensure PORT is set and configure proxy listening\n\
-        if [ -z "$PORT" ]; then\n\
-            echo "Error: PORT environment variable is not set"\n\
-            exit 1\n\
-        fi\n\
-        export KONG_PROXY_LISTEN="0.0.0.0:$PORT"\n\
-        echo "Configured Kong to listen on: $KONG_PROXY_LISTEN"\n\
-        \n\
-        echo "Successfully configured Kong database connection"\n\
-    else\n\
-        echo "Error: DATABASE_URL not set"\n\
+setup_kong() {\n\
+    # Ensure PORT is set and configure proxy listening\n\
+    if [ -z "$PORT" ]; then\n\
+        echo "Error: PORT environment variable is not set"\n\
         exit 1\n\
     fi\n\
+    export KONG_PROXY_LISTEN="0.0.0.0:$PORT"\n\
+    echo "Configured Kong to listen on: $KONG_PROXY_LISTEN"\n\
+}\n\
+\n\
+if [ -n "$DATABASE_URL" ]; then\n\
+    echo "DATABASE_URL is set, attempting to parse..."\n\
+    parse_database_url\n\
+    \n\
+    # Verify all required variables are set\n\
+    if [ -z "$KONG_PG_USER" ] || [ -z "$KONG_PG_PASSWORD" ] || \n\
+       [ -z "$KONG_PG_HOST" ] || [ -z "$KONG_PG_PORT" ] || \n\
+       [ -z "$KONG_PG_DATABASE" ]; then\n\
+        echo "Error: Failed to parse one or more database connection parameters"\n\
+        echo "Please ensure DATABASE_URL is in the format: postgres://user:password@host:port/dbname"\n\
+        exit 1\n\
+    fi\n\
+    \n\
+    setup_kong\n\
+    echo "Successfully configured Kong"\n\
+else\n\
+    echo "Error: DATABASE_URL not set"\n\
+    exit 1\n\
 fi\n\
 \n\
 # Execute the original entrypoint script\n\
