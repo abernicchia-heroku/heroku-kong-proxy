@@ -2,7 +2,7 @@
 set -e
 
 parse_database_url() {
-    echo "Parsing DATABASE_URL: $DATABASE_URL"
+    echo "Parsing DATABASE_URL ..."
     # Extract each component using cut and sed
     userpass=$(echo "$DATABASE_URL" | sed -e "s|postgres://\([^@]*\)@.*|\1|")
     hostport=$(echo "$DATABASE_URL" | sed -e "s|postgres://[^@]*@\([^/]*\)/.*|\1|")
@@ -38,6 +38,17 @@ setup_kong() {
     echo "Configured Kong to listen on: $KONG_PROXY_LISTEN"
 }
 
+run_migrations() {
+    echo "Running database migrations..."
+    kong migrations bootstrap --force
+    if [ $? -eq 0 ]; then
+        echo "Migrations completed successfully"
+    else
+        echo "Error: Failed to run migrations"
+        exit 1
+    fi
+}
+
 if [ -n "$DATABASE_URL" ]; then
     echo "DATABASE_URL is set, attempting to parse..."
     parse_database_url
@@ -53,6 +64,11 @@ if [ -n "$DATABASE_URL" ]; then
     
     setup_kong
     echo "Successfully configured Kong"
+
+    # Run migrations if APP_RUN_KONG_MIGRATIONS is set to true
+    if [ "$APP_RUN_KONG_MIGRATIONS" = "true" ]; then
+        run_migrations
+    fi
 else
     echo "Error: DATABASE_URL not set"
     exit 1

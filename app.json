@@ -55,6 +55,11 @@
     "KONG_LOG_LEVEL": {
       "description": "Log level",
       "value": "notice"
+    },
+    "APP_RUN_KONG_MIGRATIONS": {
+      "description": "Set to 'true' to run database migrations on startup (first deploy only)",
+      "value": "true",
+      "required": true
     }
   },
   "formation": {
