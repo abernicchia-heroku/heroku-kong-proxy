@@ -7,7 +7,7 @@ RUN mkdir -p /usr/local/kong/declarative
 COPY kong.conf /etc/kong/kong.conf
 COPY kong.yml /usr/local/kong/declarative/kong.yml
 
-# Create script to parse DATABASE_URL
+# Create bootstrap script for Heroku configuration
 USER root
 RUN echo '#!/bin/sh\n\
 set -e\n\
@@ -53,6 +53,14 @@ if [ "$1" = "kong" ]; then\n\
             exit 1\n\
         fi\n\
         \n\
+        # Ensure PORT is set and configure proxy listening\n\
+        if [ -z "$PORT" ]; then\n\
+            echo "Error: PORT environment variable is not set"\n\
+            exit 1\n\
+        fi\n\
+        export KONG_PROXY_LISTEN="0.0.0.0:$PORT"\n\
+        echo "Configured Kong to listen on: $KONG_PROXY_LISTEN"\n\
+        \n\
         echo "Successfully configured Kong database connection"\n\
     else\n\
         echo "Error: DATABASE_URL not set"\n\
@@ -61,7 +69,7 @@ if [ "$1" = "kong" ]; then\n\
 fi\n\
 \n\
 # Execute the original entrypoint script\n\
-exec /docker-entrypoint.sh "$@"' > /parse-db-url.sh && chmod +x /parse-db-url.sh
+exec /docker-entrypoint.sh "$@"' > /kong-heroku-bootstrap.sh && chmod +x /kong-heroku-bootstrap.sh
 
 # Set environment variables
 ENV KONG_DATABASE=postgres \
@@ -77,8 +85,8 @@ ENV KONG_DATABASE=postgres \
 # Expose port (default, will be overridden by Heroku)
 EXPOSE ${PORT}
 
-# Use our script as entrypoint
-ENTRYPOINT ["/parse-db-url.sh"]
+# Use our bootstrap script as entrypoint
+ENTRYPOINT ["/kong-heroku-bootstrap.sh"]
 
 # Start kong
 CMD ["kong", "docker-start"] 
