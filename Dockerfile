@@ -8,6 +8,7 @@ COPY kong.conf /etc/kong/kong.conf
 COPY kong.yml /usr/local/kong/declarative/kong.yml
 
 # Create script to parse DATABASE_URL
+USER root
 RUN echo '#!/bin/sh\n\
 if [ -n "$DATABASE_URL" ]; then\n\
   # Parse the DATABASE_URL\n\

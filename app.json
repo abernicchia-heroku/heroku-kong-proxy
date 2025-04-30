@@ -1,20 +1,36 @@
 {
-  "name": "ab-cr-kong",
-  "description": "Kong Gateway Proxy (Data Plane)",
-  "keywords": ["kong", "api-gateway", "proxy"],
+  "name": "Kong API Gateway",
+  "description": "Kong API Gateway running on Heroku",
+  "keywords": [
+    "kong",
+    "api-gateway",
+    "api",
+    "gateway",
+    "proxy"
+  ],
+  "repository": "https://github.com/abernicchia-heroku/heroku-kong-proxy",
   "stack": "container",
+  "success_url": "/",
+  "addons": [
+    {
+      "plan": "heroku-postgresql:mini"
+    }
+  ],
   "env": {
     "KONG_DATABASE": {
-      "description": "Database type",
-      "value": "postgres"
+      "description": "Database type for Kong",
+      "value": "postgres",
+      "required": true
     },
     "KONG_PG_SSL": {
-      "description": "Enable SSL for database connection",
-      "value": "on"
+      "description": "Enable SSL for PostgreSQL connections",
+      "value": "on",
+      "required": true
     },
     "KONG_PG_SSL_VERIFY": {
-      "description": "Verify SSL certificate",
-      "value": "off"
+      "description": "Disable SSL verification for Heroku PostgreSQL",
+      "value": "off",
+      "required": true
     },
     "KONG_PROXY_LISTEN": {
       "description": "Proxy listen configuration for Heroku",
@@ -41,11 +57,6 @@
       "value": "notice"
     }
   },
-  "addons": [
-    {
-      "plan": "heroku-postgresql:basic"
-    }
-  ],
   "formation": {
     "web": {
       "quantity": 1,
