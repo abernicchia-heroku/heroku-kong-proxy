@@ -10,23 +10,26 @@ COPY kong.yml /usr/local/kong/declarative/kong.yml
 # Create script to parse DATABASE_URL
 USER root
 RUN echo '#!/bin/sh\n\
-if [ -n "$DATABASE_URL" ]; then\n\
-  # Parse the DATABASE_URL\n\
-  pattern="postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)"\n\
-  if echo "$DATABASE_URL" | grep -E "$pattern" > /dev/null; then\n\
-    export KONG_PG_USER=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\1|")\n\
-    export KONG_PG_PASSWORD=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\2|")\n\
-    export KONG_PG_HOST=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\3|")\n\
-    export KONG_PG_PORT=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\4|")\n\
-    export KONG_PG_DATABASE=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\5|")\n\
-    echo "Kong Postgres settings configured from DATABASE_URL"\n\
+# Only parse DATABASE_URL if we are running Kong\n\
+if [ "$1" = "kong" ]; then\n\
+  if [ -n "$DATABASE_URL" ]; then\n\
+    # Parse the DATABASE_URL\n\
+    pattern="postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)"\n\
+    if echo "$DATABASE_URL" | grep -E "$pattern" > /dev/null; then\n\
+      export KONG_PG_USER=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\1|")\n\
+      export KONG_PG_PASSWORD=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\2|")\n\
+      export KONG_PG_HOST=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\3|")\n\
+      export KONG_PG_PORT=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\4|")\n\
+      export KONG_PG_DATABASE=$(echo "$DATABASE_URL" | sed -E "s|postgres://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+)|\5|")\n\
+      echo "Kong Postgres settings configured from DATABASE_URL"\n\
+    else\n\
+      echo "Error: DATABASE_URL format not recognized"\n\
+      exit 1\n\
+    fi\n\
   else\n\
-    echo "Error: DATABASE_URL format not recognized"\n\
+    echo "Error: DATABASE_URL not set"\n\
     exit 1\n\
   fi\n\
-else\n\
-  echo "Error: DATABASE_URL not set"\n\
-  exit 1\n\
 fi\n\
 \n\
 # Execute the original entrypoint script\n\
