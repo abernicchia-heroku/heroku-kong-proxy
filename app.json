@@ -1,0 +1,60 @@
+{
+  "name": "ab-cr-kong",
+  "description": "Kong Gateway Proxy (Data Plane)",
+  "keywords": ["kong", "api-gateway", "proxy"],
+  "stack": "container",
+  "env": {
+    "KONG_DATABASE": {
+      "description": "Database type",
+      "value": "postgres"
+    },
+    "KONG_PG_SSL": {
+      "description": "Enable SSL for database connection",
+      "value": "on"
+    },
+    "KONG_PG_SSL_VERIFY": {
+      "description": "Verify SSL certificate",
+      "value": "off"
+    },
+    "KONG_PROXY_LISTEN": {
+      "description": "Proxy listen configuration for Heroku",
+      "value": "0.0.0.0:${PORT}"
+    },
+    "KONG_ADMIN_LISTEN": {
+      "description": "Admin API listen configuration (disabled for proxy)",
+      "value": "off"
+    },
+    "KONG_DECLARATIVE_CONFIG": {
+      "description": "Path to declarative configuration file",
+      "value": "/usr/local/kong/declarative/kong.yml"
+    },
+    "KONG_PROXY_ACCESS_LOG": {
+      "description": "Proxy access log location",
+      "value": "/dev/stdout"
+    },
+    "KONG_PROXY_ERROR_LOG": {
+      "description": "Proxy error log location",
+      "value": "/dev/stderr"
+    },
+    "KONG_LOG_LEVEL": {
+      "description": "Log level",
+      "value": "notice"
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:basic"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+} 
