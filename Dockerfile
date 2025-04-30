@@ -1,11 +1,11 @@
-FROM kong:3.5
+FROM kong:3.9
 
 # Create directory for declarative config
 RUN mkdir -p /usr/local/kong/declarative
 
 # Copy configuration files
 COPY kong.conf /etc/kong/kong.conf
-COPY kong.yml /usr/local/kong/declarative/kong.yml
+COPY kong.yml.sample /usr/local/kong/declarative/kong.yml
 
 # Copy and set up bootstrap script
 USER root
