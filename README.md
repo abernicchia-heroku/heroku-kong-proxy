@@ -2,6 +2,8 @@
 
 This repository contains a Dockerized Kong API Gateway configured to run on Heroku. Kong is a popular, open-source API Gateway that helps you manage, secure, and monitor your APIs.
 
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
 ## Prerequisites
 
 - Heroku CLI installed
@@ -39,32 +41,10 @@ To run the database migrations, you'll need to execute them in a one-off dyno wi
 
 2. Run a one-off dyno with the necessary Kong environment variables:
    ```bash
-   heroku run -a your-app-name \
-     -e KONG_DATABASE=postgres \
-     -e KONG_PG_SSL=on \
-     -e KONG_PG_SSL_VERIFY=off \
-     bash
+   heroku run bahs -a your-app-name
    ```
 
-3. Once inside the dyno's shell, parse the database URL and set up Kong environment variables:
-   ```bash
-   # Get DATABASE_URL from the environment
-   DATABASE_URL=$(echo $DATABASE_URL)
-   
-   # Parse DATABASE_URL components
-   userpass=$(echo "$DATABASE_URL" | sed -e "s|postgres://\([^@]*\)@.*|\1|")
-   hostport=$(echo "$DATABASE_URL" | sed -e "s|postgres://[^@]*@\([^/]*\)/.*|\1|")
-   dbname=$(echo "$DATABASE_URL" | sed -e "s|postgres://[^@]*@[^/]*/\(.*\)|\1|")
-   
-   # Set Kong environment variables
-   export KONG_PG_USER=$(echo "$userpass" | cut -d: -f1)
-   export KONG_PG_PASSWORD=$(echo "$userpass" | cut -d: -f2)
-   export KONG_PG_HOST=$(echo "$hostport" | cut -d: -f1)
-   export KONG_PG_PORT=$(echo "$hostport" | cut -d: -f2)
-   export KONG_PG_DATABASE="$dbname"
-   ```
-
-4. Finally, run the migrations:
+3. Finally, run the migrations:
    ```bash
    kong migrations bootstrap --force
    ```
@@ -143,3 +123,136 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 For issues and questions, please open an issue in the GitHub repository.
+
+## Managing Kong Configuration with decK
+
+[decK](https://docs.konghq.com/deck/) is Kong's official configuration management tool. It allows you to manage Kong's configuration as code and sync it with your Kong instance.
+
+### Prerequisites
+
+1. Install decK:
+   ```bash
+   # macOS
+   brew install kong/deck/deck
+
+   # Linux
+   curl -sL https://github.com/kong/deck/releases/latest/download/deck_$(uname -s)_amd64.tar.gz | tar xz -C /tmp/
+   sudo mv /tmp/deck /usr/local/bin/
+   ```
+
+### Initial Setup
+
+1. Create a temporary Admin API endpoint using a one-off dyno:
+   ```bash
+   heroku run -a your-app-name \
+     -e KONG_DATABASE=postgres \
+     -e KONG_PG_SSL=on \
+     -e KONG_PG_SSL_VERIFY=off \
+     -e KONG_ADMIN_LISTEN=0.0.0.0:8001 \
+     -p 8001 \
+     bash
+   ```
+
+2. In the dyno shell, parse the database URL and set up Kong environment variables:
+   ```bash
+   # Get DATABASE_URL from the environment
+   DATABASE_URL=$(echo $DATABASE_URL)
+   
+   # Parse DATABASE_URL components
+   userpass=$(echo "$DATABASE_URL" | sed -e "s|postgres://\([^@]*\)@.*|\1|")
+   hostport=$(echo "$DATABASE_URL" | sed -e "s|postgres://[^@]*@\([^/]*\)/.*|\1|")
+   dbname=$(echo "$DATABASE_URL" | sed -e "s|postgres://[^@]*@[^/]*/\(.*\)|\1|")
+   
+   # Set Kong environment variables
+   export KONG_PG_USER=$(echo "$userpass" | cut -d: -f1)
+   export KONG_PG_PASSWORD=$(echo "$userpass" | cut -d: -f2)
+   export KONG_PG_HOST=$(echo "$hostport" | cut -d: -f1)
+   export KONG_PG_PORT=$(echo "$hostport" | cut -d: -f2)
+   export KONG_PG_DATABASE="$dbname"
+   ```
+
+3. Start Kong with Admin API enabled:
+   ```bash
+   kong start
+   ```
+
+4. In a new terminal, create a configuration file:
+   ```bash
+   # Get the dyno's URL (replace your-app-name)
+   KONG_ADDR=$(heroku run:status -a your-app-name | grep 'web.' | awk '{print $3}')
+   
+   # Export current configuration
+   deck dump --kong-addr http://$KONG_ADDR:8001 --output-file kong.yaml
+   ```
+
+### Managing Configuration
+
+1. Edit `kong.yaml` to define your services, routes, plugins, and other Kong entities:
+   ```yaml
+   _format_version: "3.0"
+   services:
+     - name: example-service
+       url: http://example.com
+       routes:
+         - name: example-route
+           paths:
+             - /example
+       plugins:
+         - name: rate-limiting
+           config:
+             minute: 5
+   ```
+
+2. Validate your configuration:
+   ```bash
+   deck validate -s kong.yaml
+   ```
+
+3. Diff changes before applying:
+   ```bash
+   deck diff --kong-addr http://$KONG_ADDR:8001 -s kong.yaml
+   ```
+
+4. Apply the configuration:
+   ```bash
+   deck sync --kong-addr http://$KONG_ADDR:8001 -s kong.yaml
+   ```
+
+### Best Practices
+
+1. Version Control:
+   - Keep your `kong.yaml` in version control
+   - Review changes through pull requests
+   - Use CI/CD to validate configuration files
+
+2. Environment Management:
+   - Use separate configuration files for different environments
+   - Use decK's `--select-tag` to manage environment-specific configurations
+
+3. Security:
+   - Never commit sensitive values (use environment variables)
+   - Limit Admin API access to trusted networks
+   - Always run Admin API in one-off dynos, never in production
+
+4. Backup:
+   - Regularly export your configuration using `deck dump`
+   - Store backups in a secure location
+
+### Troubleshooting
+
+If you encounter issues:
+
+1. Verify connectivity:
+   ```bash
+   curl http://$KONG_ADDR:8001/status
+   ```
+
+2. Check decK version compatibility:
+   ```bash
+   deck version
+   ```
+
+3. Enable verbose logging:
+   ```bash
+   deck sync --kong-addr http://$KONG_ADDR:8001 -s kong.yaml --verbose
+   ```

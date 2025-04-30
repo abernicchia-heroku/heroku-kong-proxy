@@ -13,7 +13,7 @@
   "success_url": "/",
   "addons": [
     {
-      "plan": "heroku-postgresql:mini"
+      "plan": "heroku-postgresql:standard-0"
     }
   ],
   "env": {
@@ -60,12 +60,7 @@
   "formation": {
     "web": {
       "quantity": 1,
-      "size": "basic"
+      "size": "standard-1x"
     }
-  },
-  "buildpacks": [
-    {
-      "url": "heroku/nodejs"
-    }
-  ]
+  }
 } 
