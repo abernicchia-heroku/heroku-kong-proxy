@@ -86,6 +86,16 @@ The Kong gateway is configured using the following files:
 
 Environment variables are automatically configured by the bootstrap script using the `DATABASE_URL` provided by Heroku.
 
+## ⚠️ Security Notice
+
+**This implementation does NOT provide a secured Kong Proxy**
+
+- There is no enforced HTTPS/SSL for the Kong Proxy.
+- No authentication or RBAC is enabled by default.
+- The Proxy is accessible to anyone who knows the URL.
+
+**Do NOT use this setup in production or for sensitive workloads without adding proper security controls (HTTPS, firewall, authentication, etc.).**
+
 ## Troubleshooting
 
 If you encounter any issues:
