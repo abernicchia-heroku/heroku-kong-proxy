@@ -12,7 +12,8 @@ The author of this article makes any warranties about the completeness, reliabil
 
 - A Heroku account
 - Heroku CLI installed
-- PostgreSQL add-on attached to your Heroku app
+- Kong Admin API deployed as Heroku app (see https://github.com/abernicchia-heroku/heroku-kong-admin)
+- Kong Admin API's PostgreSQL add-on attached to your Heroku app
 - Docker installed (for local development)
 
 ## Deployment Steps
@@ -22,9 +23,9 @@ The author of this article makes any warranties about the completeness, reliabil
    heroku create your-app-name
    ```
 
-2. Add PostgreSQL add-on:
+2. Attach Kong Admin API's PostgreSQL add-on as DATABASE_URL:
    ```bash
-   heroku addons:create heroku-postgresql:standard-0
+   heroku addons:attach kong-admin-api-app-posrtgres-addon-name -a your-app-name
    ```
 
 3. Deploy the application:
@@ -32,44 +33,10 @@ The author of this article makes any warranties about the completeness, reliabil
    git push heroku main
    ```
 
-## Database Setup
-
-Kong requires database migrations to be run before it can start serving requests. This setup handles migrations in two ways:
-
-### Option 1: Automatic Migrations (Recommended for First Deploy)
-
-When deploying for the first time, the `APP_RUN_KONG_MIGRATIONS` environment variable is automatically set to `true` in app.json. This will:
-- Run the necessary database migrations during the first startup
-- Create all required database tables
-- Initialize the schema
-
-After the first successful deployment, you should disable automatic migrations:
-```bash
-heroku config:set APP_RUN_KONG_MIGRATIONS=false -a your-app-name
-```
-
-### Option 2: Manual Migrations (For Updates)
-
-For subsequent Kong version updates or if you prefer manual control, you can run migrations using a one-off dyno:
-
-1. First, ensure automatic migrations are disabled:
-   ```bash
-   heroku config:set APP_RUN_KONG_MIGRATIONS=false -a your-app-name
-   ```
-
-2. Run migrations manually:
-   ```bash
-   heroku run bash -a your-app-name
-   ```
-
-3. Once inside the dyno's shell, the bootstrap script will automatically configure the database connection, and you can run:
-   ```bash
-   kong migrations bootstrap --force
-   ```
 
 ## Verification
 
-After running the migrations, you can verify that Kong is running properly by checking the logs:
+You can verify that Kong is running properly by checking the logs:
 
 ```bash
 heroku logs --tail
