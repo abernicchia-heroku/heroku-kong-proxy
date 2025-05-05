@@ -17,9 +17,7 @@ ENV KONG_DATABASE=postgres \
     KONG_PG_SSL=on \
     KONG_PG_SSL_VERIFY=off \
     KONG_PROXY_ACCESS_LOG=/dev/stdout \
-    KONG_ADMIN_ACCESS_LOG=/dev/stdout \
     KONG_PROXY_ERROR_LOG=/dev/stderr \
-    KONG_ADMIN_ERROR_LOG=/dev/stderr \
     KONG_ADMIN_LISTEN=off \
     PORT=8000
 

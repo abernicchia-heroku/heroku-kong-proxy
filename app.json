@@ -17,29 +17,9 @@
     }
   ],
   "env": {
-    "KONG_PROXY_LISTEN": {
-      "description": "Proxy listen configuration for Heroku",
-      "value": "0.0.0.0:${PORT}"
-    },
-    "KONG_ADMIN_LISTEN": {
-      "description": "Admin API listen configuration (disabled for proxy)",
-      "value": "off"
-    },
-    "KONG_DECLARATIVE_CONFIG": {
-      "description": "Path to declarative configuration file",
-      "value": "/usr/local/kong/declarative/kong.yml"
-    },
-    "KONG_PROXY_ACCESS_LOG": {
-      "description": "Proxy access log location",
-      "value": "/dev/stdout"
-    },
-    "KONG_PROXY_ERROR_LOG": {
-      "description": "Proxy error log location",
-      "value": "/dev/stderr"
-    },
     "KONG_LOG_LEVEL": {
       "description": "Log level",
-      "value": "notice"
+      "value": "debug"
     }
   },
   "formation": {
